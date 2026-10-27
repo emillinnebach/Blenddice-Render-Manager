@@ -1,0 +1,79 @@
+{
+    "schema_version": 1,
+    "_comment": "Tokens: {SCENE} {VIEW_LAYER} {PACKAGE}. Packages are listed in the order their nodes are placed; a pass goes to the first package whose 'match' patterns fit (* = anything), specific patterns win over '*'. Passes matched by no package are not written. See CONFIG_README.md.",
+    "directory": "//../render/{VIEW_LAYER}/{PACKAGE}",
+    "file_name": "{SCENE}_{VIEW_LAYER}_{PACKAGE}-",
+    "node_width": 400,
+    "rename_sockets": {
+        "Image": "rgb"
+    },
+    "denoise": {
+        "enabled": true,
+        "_comment": "Pass -> albedo pass. With an albedo entry the pass is only denoised if that Color pass and Normal are enabled; null = denoise from the image (plus Normal if enabled).",
+        "passes": {
+            "Diffuse Direct": "Diffuse Color",
+            "Diffuse Indirect": "Diffuse Color",
+            "Glossy Direct": "Glossy Color",
+            "Glossy Indirect": "Glossy Color",
+            "Transmission Direct": "Transmission Color",
+            "Transmission Indirect": "Transmission Color",
+            "Volume Direct": null,
+            "Volume Indirect": null
+        }
+    },
+    "packages": [
+        {
+            "name": "AOV",
+            "color": "#67AC0A",
+            "match": [
+                "*"
+            ],
+            "save_as_render": true,
+            "format": {
+                "file_format": "OPEN_EXR_MULTILAYER",
+                "color_depth": "32",
+                "exr_codec": "DWAA",
+                "quality": 65
+            }
+        },
+        {
+            "name": "DATA",
+            "color": "#3E78B2",
+            "match": [
+                "Depth",
+                "Mist",
+                "Position",
+                "Normal",
+                "Vector",
+                "UV",
+                "Object Index",
+                "Material Index",
+                "Denoising *",
+                "Noisy *",
+                "Debug *",
+                "Render Time",
+                "Guiding *",
+                "Volume Majorant"
+            ],
+            "save_as_render": true,
+            "format": {
+                "file_format": "OPEN_EXR_MULTILAYER",
+                "color_depth": "32",
+                "exr_codec": "ZIP"
+            }
+        },
+        {
+            "name": "CRYPTO",
+            "color": "#566161",
+            "match": [
+                "Crypto*"
+            ],
+            "save_as_render": true,
+            "format": {
+                "file_format": "OPEN_EXR_MULTILAYER",
+                "color_depth": "32",
+                "exr_codec": "ZIP"
+            }
+        }
+    ]
+}

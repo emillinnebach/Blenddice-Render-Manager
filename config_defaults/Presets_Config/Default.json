@@ -1,0 +1,31 @@
+{
+    "schema_version": 1,
+    "samples": 0,
+    "passes": {
+        "combined": true,
+        "depth": true,
+        "mist": false,
+        "position": true,
+        "normal": true,
+        "vector": true,
+        "uv": true,
+        "grease_pencil": true,
+        "denoising_data": false,
+        "diffuse_direct": true,
+        "diffuse_indirect": true,
+        "diffuse_color": true,
+        "glossy_direct": true,
+        "glossy_indirect": true,
+        "glossy_color": true,
+        "transmission_direct": true,
+        "transmission_indirect": true,
+        "transmission_color": true,
+        "volume_direct": false,
+        "volume_indirect": false,
+        "emission": false,
+        "environment": false,
+        "ambient_occlusion": false,
+        "cryptomatte_object": true,
+        "cryptomatte_material": true
+    }
+}

@@ -1,0 +1,20 @@
+schema_version = "1.0.0"
+
+id = "blenddice_render_manager"
+version = "2.2.0"
+name = "Blenddice Render Manager"
+tagline = "Apply render pass configs to view layers and build output nodes"
+maintainer = "Blenddice"
+type = "add-on"
+website = "https://github.com/emillinnebach/Blenddice-Render-Manager/tree/main"
+
+blender_version_min = "4.2.0"
+
+license = [
+    "SPDX:GPL-2.0-or-later",
+]
+
+tags = ["Render", "Compositing", "Pipeline"]
+
+[permissions]
+files = "Read and sync preset configs from the production folder"
