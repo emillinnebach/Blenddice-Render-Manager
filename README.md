@@ -1,6 +1,7 @@
 # Blenddice Render Manager
 
 Extension to apply render pass configs to view layers and auto output node generator. Enables you to share your ViewLayer presets across your production. Edit the config files to set up.
+Created with heavy use of CLAUDE CODE!
 
 ## Features
 
