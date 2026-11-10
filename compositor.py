@@ -78,32 +78,56 @@ def assign_package(socket_name, packages):
     return catch_all
 
 
-def plan_denoise(denoise_cfg, outputs):
-    """Which passes get a Denoise node. Returns {pass_name: (pass, normal, albedo)}.
+_MISSING = object()
 
-    A pass with an albedo entry (e.g. Diffuse Direct -> Diffuse Color) is only
-    denoised if both its Color pass and Normal are enabled, otherwise it passes
-    through untouched. A pass with null (e.g. Volume Direct) is denoised from the
-    image itself, plus Normal if that pass is enabled."""
+
+def _denoise_entry(passes_cfg, pass_name):
+    """The denoise.passes entry for a pass: an exact name wins, otherwise the
+    first wildcard key (e.g. 'Combined_*') that fits. _MISSING if none does."""
+    if pass_name in passes_cfg and not pass_name.startswith("_"):
+        return passes_cfg[pass_name]
+    lowered = pass_name.lower()
+    for key, value in passes_cfg.items():
+        if key.startswith("_") or not any(c in key for c in "*?["):
+            continue
+        if fnmatch.fnmatchcase(lowered, key.lower()):
+            return value
+    return _MISSING
+
+
+def plan_denoise(denoise_cfg, outputs):
+    """Which passes get a Denoise node. Returns {pass_name: (pass, normal, albedo)}
+    where normal / albedo are the sockets to connect (or None).
+
+    Entry forms in denoise.passes (keys may use wildcards, e.g. 'Combined_*'):
+      "Diffuse Color"                   albedo pass, strict: only denoised if that
+                                        pass AND Normal are enabled, else passes through
+      null                              image only (no Normal, no Albedo) - e.g. volumes
+      {"normal": true, "albedo": "..."} connects whatever of the two is available
+                                        (normal defaults to true, albedo to none)"""
     plan = {}
     if not denoise_cfg or not denoise_cfg.get("enabled", True):
         return plan
 
+    passes_cfg = denoise_cfg.get("passes", {})
     by_name = {o.name: o for o in outputs}
-    normal = by_name.get("Normal")
-    for pass_name, albedo_name in denoise_cfg.get("passes", {}).items():
-        if pass_name.startswith("_"):
+    normal_socket = by_name.get("Normal")
+    for source in outputs:
+        entry = _denoise_entry(passes_cfg, source.name)
+        if entry is _MISSING:
             continue
-        source = by_name.get(pass_name)
-        if source is None:
-            continue
-        if albedo_name:
-            albedo = by_name.get(albedo_name)
-            if albedo is None or normal is None:
+        if isinstance(entry, str):
+            albedo = by_name.get(entry)
+            if albedo is None or normal_socket is None:
                 continue
-            plan[pass_name] = (source, normal, albedo)
-        else:
-            plan[pass_name] = (source, normal, None)
+            plan[source.name] = (source, normal_socket, albedo)
+        elif entry is None:
+            plan[source.name] = (source, None, None)
+        elif isinstance(entry, dict):
+            normal = normal_socket if entry.get("normal", True) else None
+            albedo_name = entry.get("albedo")
+            albedo = by_name.get(albedo_name) if albedo_name else None
+            plan[source.name] = (source, normal, albedo)
     return plan
 
 

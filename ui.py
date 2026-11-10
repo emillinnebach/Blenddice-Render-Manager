@@ -2,8 +2,9 @@ import bpy
 
 from . import config
 from .operators import target_description
+from .tools import selected_lights
 
-CATEGORY = "Blenddice Render Setup"
+CATEGORY = "Render Layer Manager"
 
 
 def draw_config_warning(layout):
@@ -37,13 +38,33 @@ def draw_presets_box(layout, context):
         op.preset_name = name
 
 
+def draw_camera_box(layout, context):
+    box = layout.box()
+    camera = context.scene.camera if context.scene else None
+    box.label(text=f"Camera: {camera.name}" if camera else "No active camera", icon='CAMERA_DATA')
+    row = box.row()
+    row.scale_y = 1.3
+    row.operator("blenddice.export_camera", icon='EXPORT')
+
+
+def draw_light_group_box(layout, context):
+    box = layout.box()
+    box.label(text="Light Groups:")
+    count = len(selected_lights(context))
+    box.label(text=f"{count} light(s) selected" if count else "Select light(s) first", icon='LIGHT')
+    row = box.row()
+    row.scale_y = 1.3
+    row.operator("blenddice.create_light_group", icon='OUTLINER_OB_LIGHT')
+    box.operator("blenddice.clear_light_groups", icon='TRASH')
+
+
 # ---------------------------------------------------------------------------
 # 3D Viewport sidebar
 # ---------------------------------------------------------------------------
 
 class VIEW3D_PT_blenddice_main(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_blenddice_main"
-    bl_label = "Blenddice Render Manager"
+    bl_label = "Render Layer Manager"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = CATEGORY
@@ -55,6 +76,8 @@ class VIEW3D_PT_blenddice_main(bpy.types.Panel):
         col.operator("blenddice.apply_basic_settings", icon='OUTPUT')
 
         draw_presets_box(layout, context)
+        draw_light_group_box(layout, context)
+        draw_camera_box(layout, context)
         draw_config_warning(layout)
 
 
@@ -81,7 +104,7 @@ class VIEW3D_PT_blenddice_advanced(bpy.types.Panel):
 
 class NODE_PT_blenddice_main(bpy.types.Panel):
     bl_idname = "NODE_PT_blenddice_main"
-    bl_label = "Blenddice Render Manager"
+    bl_label = "Render Layer Manager"
     bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = CATEGORY
@@ -97,6 +120,7 @@ class NODE_PT_blenddice_main(bpy.types.Panel):
         col.operator("blenddice.build_output_node", icon='NODE_COMPOSITING')
 
         draw_presets_box(layout, context)
+        draw_camera_box(layout, context)
         draw_config_warning(layout)
 
 

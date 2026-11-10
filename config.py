@@ -32,6 +32,16 @@ DEFAULT_PRESET_NAME = "Default"
 
 # Tokens usable in output_nodes.json path / file name templates
 TOKENS = ("SCENE", "VIEW_LAYER", "PACKAGE")
+# Tokens usable in the "camera" block of output_nodes.json
+CAMERA_TOKENS = ("SCENE", "CAMERA")
+
+# Used for any key missing from the "camera" block (and when the block is missing entirely)
+CAMERA_DEFAULTS = {
+    "directory": "//../render/CAMERA",
+    "file_name": "Camera_{SCENE}",
+    "global_scale": 100.0,
+    "flatten": True,
+}
 
 # Pass preset key (used in the preset .json files) -> view layer attribute path.
 PASS_ATTR_MAP = {
@@ -289,9 +299,44 @@ def validate_output_nodes(data):
             if "enabled" in denoise and not isinstance(denoise["enabled"], bool):
                 errors.append("'denoise.enabled' must be true or false")
             passes = denoise.get("passes", {})
-            if not isinstance(passes, dict) or not all(
-                    v is None or isinstance(v, str) for k, v in passes.items() if not k.startswith("_")):
-                errors.append("'denoise.passes' must map pass names to an albedo pass name or null")
+            if not isinstance(passes, dict):
+                errors.append("'denoise.passes' must be an object")
+            else:
+                for key, value in passes.items():
+                    if key.startswith("_") or value is None or isinstance(value, str):
+                        continue
+                    if not isinstance(value, dict):
+                        errors.append(f"'denoise.passes.{key}' must be an albedo pass name, null or an object")
+                        continue
+                    for sub, subvalue in value.items():
+                        if sub.startswith("_"):
+                            continue
+                        if sub == "normal" and not isinstance(subvalue, bool):
+                            errors.append(f"'denoise.passes.{key}.normal' must be true or false")
+                        elif sub == "albedo" and subvalue is not None and not isinstance(subvalue, str):
+                            errors.append(f"'denoise.passes.{key}.albedo' must be a pass name or null")
+                        elif sub not in ("normal", "albedo"):
+                            warnings.append(f"'denoise.passes.{key}': unknown key '{sub}' (will be ignored)")
+
+    camera = data.get("camera")
+    if camera is not None:
+        if not isinstance(camera, dict):
+            errors.append("'camera' must be an object")
+        else:
+            for key in ("directory", "file_name"):
+                if key in camera:
+                    value = camera[key]
+                    if not isinstance(value, str) or not value.strip():
+                        errors.append(f"'camera.{key}' must be a non-empty text")
+                        continue
+                    for token in _TOKEN.findall(value):
+                        if token not in CAMERA_TOKENS:
+                            warnings.append(f"'camera.{key}': unknown token {{{token}}} (known: {', '.join(CAMERA_TOKENS)})")
+            scale = camera.get("global_scale")
+            if "global_scale" in camera and (isinstance(scale, bool) or not isinstance(scale, (int, float)) or scale <= 0):
+                errors.append("'camera.global_scale' must be a positive number")
+            if "flatten" in camera and not isinstance(camera["flatten"], bool):
+                errors.append("'camera.flatten' must be true or false")
 
     packages = data.get("packages")
     if not isinstance(packages, list) or not packages:
@@ -415,6 +460,18 @@ def get_basic_settings():
 
 def get_output_nodes():
     return _state["output"]
+
+
+def get_camera_settings():
+    """The "camera" block of output_nodes.json; missing keys fall back to the
+    bundled defaults, so older files keep working."""
+    settings = dict(CAMERA_DEFAULTS)
+    bundled = read_bundled_json(OUTPUT_NODES_FILENAME)
+    for source in (bundled, _state["output"]):
+        block = source.get("camera") if isinstance(source, dict) else None
+        if isinstance(block, dict):
+            settings.update({k: v for k, v in block.items() if not k.startswith("_")})
+    return settings
 
 
 def get_errors():

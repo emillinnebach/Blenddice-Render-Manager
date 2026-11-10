@@ -11,7 +11,7 @@ Created with heavy use of CLAUDE CODE!
 - **Production sync:** point the add-on at a pipeline folder and the presets are copied to every artist's machine on startup, in the background.
 - **Save back:** write the current scene settings or a view layer's passes into config files.
 
-Sidebar tab: **Blenddice Render Setup** (3D Viewport and Compositor).
+Sidebar tab: **Render Layer Manager** (3D Viewport and Compositor).
 
 ## Install
 

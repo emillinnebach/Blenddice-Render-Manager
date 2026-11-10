@@ -2,7 +2,7 @@
 
 Extension to apply render pass configs to view layers and auto output node generator. Enables you to share your ViewLayer presets across your production. Edit the config files to set up.
 
-Sidebar tab: **Blenddice Render Setup** (3D Viewport and Compositor).
+Sidebar tab: **Render Layer Manager** (3D Viewport and Compositor).
 
 # Config Reference
 
@@ -89,7 +89,11 @@ Building again **replaces** the nodes generated earlier for that Render Layers n
     "file_name": "{SCENE}_{VIEW_LAYER}_{PACKAGE}-",
     "node_width": 400,
     "rename_sockets": { "Image": "rgb" },
-    "denoise": { "enabled": true, "passes": { "Diffuse Direct": "Diffuse Color", "Volume Direct": null } },
+    "denoise": { "enabled": true, "passes": {
+        "Diffuse Direct": "Diffuse Color",
+        "Volume Direct": { "normal": false, "albedo": null },
+        "Combined_*": { "normal": true, "albedo": "Denoising Albedo" } } },
+    "camera": { "directory": "//../render/CAMERA", "file_name": "Camera_{SCENE}", "global_scale": 100, "flatten": true },
     "packages": [
         { "name": "AOV", "color": "#67AC0A", "match": ["*"],
           "save_as_render": true,
@@ -104,12 +108,44 @@ Building again **replaces** the nodes generated earlier for that Render Layers n
   A pass goes to the first package whose `match` patterns fit (`*` = any characters, case-insensitive);
   specific patterns win over a catch-all `*`. Passes that match no package are not written.
   `format` keys are Blender properties of the node's image format; `file_format` is applied first.
-- **Denoise:** each listed pass gets a collapsed Denoise node in front of its socket. With an albedo entry
-  (`"Diffuse Direct": "Diffuse Color"`) the pass is only denoised if that Color pass and Normal are enabled,
-  otherwise it passes through. With `null` (Volume Direct / Indirect) it is denoised from the image,
-  plus Normal if that pass is enabled.
+- **Denoise:** each listed pass gets a collapsed Denoise node in front of its socket. Keys may use wildcards
+  (`Combined_*` = every light group pass); an exact name wins over a wildcard. Entry forms:
+  - `"Diffuse Color"` (albedo pass name): only denoised if that pass **and** Normal are enabled, otherwise the pass passes through.
+  - `null`: denoised from the image only (no Normal, no Albedo).
+  - `{ "normal": true, "albedo": "Denoising Albedo" }`: connects whichever of the two exist, so the pass is always denoised.
+    `normal` defaults to true, `albedo` to none. Use `{ "normal": false }` for volumes (they have no normals).
 - **`rename_sockets`:** renames sockets in the File Output nodes, e.g. Image becomes `rgb`.
 - Layout: nodes are placed right of the Render Layers node, from its top edge downward.
+
+## Light groups
+
+**Create Light Group** (Layout tab) works on the selected lights. One light gets a group named after itself, several
+lights share one new group, numbered `Lightgroup_001`, `Lightgroup_002`, ... (every press makes a new one; typing your own name in the redo panel reuses a group of that name). Blender replaces `.` with `_` in group names
+(`Key.001` becomes `Key_001`) and numbers duplicates with `_001`.
+
+A light can only be in **one** group, and that assignment is the same in every view layer. If a selected light is
+already in another group, a window lists those lights and asks: **Overwrite** moves them (they leave their old group; groups left without any light are deleted)
+or **Cancel** (changes nothing).
+**All View Layers** (redo panel) creates the group in every view layer instead of only the target one.
+The passes show up as `Combined_<group>` and land in the catch-all package (AOV by default) and are denoised via `Combined_*`.
+
+**Clear all Lightgroups** (small button below, asks first) removes the light group from every object and deletes all
+light groups in all view layers of the file.
+
+## Camera export (`camera` block of `output_nodes.json`)
+
+**Export Camera** (Layout and Compositor tabs) writes the scene's active camera as Alembic (.abc) for Nuke.
+
+```json
+"camera": { "directory": "//../render/CAMERA", "file_name": "Camera_{SCENE}", "global_scale": 100, "flatten": true }
+```
+
+- Tokens: `{SCENE}`, `{CAMERA}` (camera object name). `_v001` is appended; if the file exists the number goes up (never overwrites).
+- `global_scale`: 100 = Blender metres to Nuke centimetres. Blender's exporter ignores the scene Unit Scale.
+- `flatten`: bakes parents and constraints into one world transform. The frame range is the scene range.
+- The export is refused (nothing is written) if the camera is hidden or in an excluded / disabled collection; an empty file written by the exporter is deleted.
+- Y-up and the camera orientation are handled by Blender's exporter. Only perspective cameras can be exported.
+- Missing keys (or a missing block) fall back to the bundled defaults.
 
 ## Saving configs from the scene (Advanced)
 

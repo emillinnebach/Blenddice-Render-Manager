@@ -4,6 +4,7 @@
 #   - Pass presets (one .json per preset in Presets_Config/) applied to the active view layer
 #   - "Apply Basic Settings" from basic_settings.json
 #   - Compositor: File Output node builder (AOV / DATA / CRYPTO packages from output_nodes.json)
+#   - Light group button and camera export (Alembic for Nuke)
 #   - Advanced: save the scene's settings / a view layer's passes back into config files
 #   - Add-on preferences: production preset folder, background sync, config folder shortcut
 #
@@ -11,10 +12,10 @@
 
 import bpy
 
-from . import config, sync, operators, compositor, saving, prefs, ui
+from . import config, sync, operators, compositor, saving, tools, prefs, ui
 
 # prefs first: operators/panels read the preferences
-_modules = (prefs, operators, compositor, saving, ui)
+_modules = (prefs, operators, compositor, saving, tools, ui)
 
 
 def register():

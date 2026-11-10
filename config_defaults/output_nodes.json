@@ -9,7 +9,7 @@
     },
     "denoise": {
         "enabled": true,
-        "_comment": "Pass -> albedo pass. With an albedo entry the pass is only denoised if that Color pass and Normal are enabled; null = denoise from the image (plus Normal if enabled).",
+        "_comment": "Pass -> how to denoise it. Keys may use wildcards (Combined_* = all light groups). \"Diffuse Color\" = albedo pass, strict: only denoised if that pass AND Normal are enabled. null = image only. {\"normal\": true, \"albedo\": \"Denoising Albedo\"} = connects whichever of the two exist (normal defaults to true).",
         "passes": {
             "Diffuse Direct": "Diffuse Color",
             "Diffuse Indirect": "Diffuse Color",
@@ -17,8 +17,18 @@
             "Glossy Indirect": "Glossy Color",
             "Transmission Direct": "Transmission Color",
             "Transmission Indirect": "Transmission Color",
-            "Volume Direct": null,
-            "Volume Indirect": null
+            "Volume Direct": {
+                "normal": false,
+                "albedo": null
+            },
+            "Volume Indirect": {
+                "normal": false,
+                "albedo": null
+            },
+            "Combined_*": {
+                "normal": true,
+                "albedo": "Denoising Albedo"
+            }
         }
     },
     "packages": [
@@ -75,5 +85,12 @@
                 "exr_codec": "ZIP"
             }
         }
-    ]
+    ],
+    "camera": {
+        "_comment": "Export Camera button (Alembic .abc for Nuke). Tokens: {SCENE} {CAMERA}. The version suffix _v001 is added automatically and goes up if the file exists. global_scale 100 = Blender metres to Nuke centimetres. flatten bakes parents/constraints into one transform.",
+        "directory": "//../render/CAMERA",
+        "file_name": "Camera_{SCENE}",
+        "global_scale": 100,
+        "flatten": true
+    }
 }
